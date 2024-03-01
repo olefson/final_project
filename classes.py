@@ -173,6 +173,7 @@ class CommunityList:
                             vehicle.charge(station)
                         else:
                             continue
+        print("Vehicles charged") 
         return True
     
     def calculate_total_revenue(self):

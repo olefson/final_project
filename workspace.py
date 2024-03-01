@@ -121,36 +121,52 @@ community_3_button = pygwidgets.TextRadioButton(window, (100, 200), group="commu
 Level2_Charge_Station_Button = pygwidgets.TextRadioButton(window, (300, 125), group="stations", text="Level 2 Station", value=False)
 Level3_Charge_Station_Button = pygwidgets.TextRadioButton(window, (300, 175), group="stations", text="Level 3 Station", value=False)
 # Elements
-hours = 0
+
 
 # Game Loop
 run = True
 
 while run:
-    window.fill((255, 255, 255))
-    timer.tick(60)  # Control the frame rate
-    
+    window.fill(("white"))
+    timer.tick(60) #I guess use of a timer to control the frame rate
+    hours = 0
 
-    # Event handling
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            run = False
-        elif event.type == TIMER_EVENT:
-            hours += 1
-            print(hours)
-        # Handle events for the main menu
-        elif menu_state == main_menu:
+    # Game-Wide Event Handling
+    
+    if menu_state == main_menu:
+        # Main Menu
+        add_station_button.draw()
+        exit_button.draw()
+        results_button.draw()
+        
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
             if exit_button.handleEvent(event):
                 run = False
-            elif add_station_button.handleEvent(event):
+            if add_station_button.handleEvent(event):
                 menu_state = station_management_menu
-            elif results_button.handleEvent(event):
+            if results_button.handleEvent(event):
                 holder = str(CommunityList.calculate_cost())
                 CommunityList.reset_cost()
                 cost.setValue("Cost of stations: " + "$" + holder)
                 menu_state = results_menu
-        # Handle events for the station management menu
-        elif menu_state == station_management_menu:
+        
+        # Station Management Menu
+    elif menu_state == station_management_menu:
+        back_button.draw()
+        community_1_button.draw()
+        community_2_button.draw()
+        community_3_button.draw()
+        Level2_Charge_Station_Button.draw()
+        Level3_Charge_Station_Button.draw()
+        submit_station_button.draw()
+        
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
             if back_button.handleEvent(event):
                 menu_state = main_menu
             if community_1_button.handleEvent(event):
@@ -188,28 +204,9 @@ while run:
                 else:
                     print("Invalid Selection")
                 menu_state = main_menu
-        # Handle events for the results menu
-        elif menu_state == results_menu:
-            if back_button.handleEvent(event):
-                menu_state = main_menu
-
-    # Draw the current menu state
-    if menu_state == main_menu:
-        # Draw elements for the main menu
-        add_station_button.draw()
-        exit_button.draw()
-        results_button.draw()
-    elif menu_state == station_management_menu:
-        # Draw elements for the station management menu
-        back_button.draw()
-        community_1_button.draw()
-        community_2_button.draw()
-        community_3_button.draw()
-        Level2_Charge_Station_Button.draw()
-        Level3_Charge_Station_Button.draw()
-        submit_station_button.draw()
+            
+                
     elif menu_state == results_menu:
-        # Draw elements for the results menu
         back_button.draw()
         cost.draw()
         Total_EV_Charged_Daily.draw()
@@ -219,5 +216,15 @@ while run:
         Total_Vehicles_Not_Charged_Comunity_3.draw()
         Total_Cost_EV_Day.draw()
         Suggested_Communities.draw()
+        
+        
+        # Event Handling
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            if back_button.handleEvent(event):
+                menu_state = main_menu
+                
 
+        
     pygame.display.update()
