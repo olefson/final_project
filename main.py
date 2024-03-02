@@ -18,6 +18,7 @@ main_menu = "main"
 results_menu = "results"
 station_management_menu = "station_management"
 menu_state = "main"
+running = "running"
 
 # Classes
 # Abstract Button Class
@@ -101,10 +102,12 @@ cars_not_charged_community_1 = "" # Keeps track of cars not charged in community
 cars_not_charged_community_2 = "" # Keeps track of cars not charged in community 2
 cars_not_charged_community_3 = "" # Keeps track of cars not charged in community 3
 Suggested_Community = "" # Keeps track of suggested community
+simulation_running = False # Keeps track of simulation state
 
 # Text
 holder = ""
-
+running_page_text_1 = pygwidgets.DisplayText(window, (100, 50), "Running Simulation, please allow 168 seconds to pass to simulate a week.", fontSize=28)
+running_page_text_2 = pygwidgets.DisplayText(window, (100, 100), "You will be navigated to the results page after a week has passed.", fontSize=28)
 # Result page text (to update)
 cost = pygwidgets.DisplayText(window, (100, 50), "Cost:" + holder + "$")
 Total_EV_Charged_Daily = pygwidgets.DisplayText(window, (100, 100), "Total EVs Charged Daily: " + total_cars_charged_daily)
@@ -118,9 +121,10 @@ Suggested_Communities = pygwidgets.DisplayText(window, (100, 400), "Suggested Co
 
 # Buttons
 exit_button = TextButton(window, (290, 450), "Exit", width=200, height=50, callBack=pygame.quit) #use of abstract button class
-add_station_button = pygwidgets.TextButton(window, (290, 300), "Add Station", width=200, height=50, fontSize=36)
+configure_simulation_button = pygwidgets.TextButton(window, (200, 300), "Configure Simulation", width=400, height=50, fontSize=36)
 back_button = pygwidgets.TextButton(window, (290, 450), "Back", width=200, height=50, fontSize=36)
 submit_station_button= pygwidgets.TextButton(window, (290, 300), "Submit Station", width=200, height=50, fontSize=36)
+start_simulation_button = pygwidgets.TextButton(window, (290, 375), "Start Simulation", width=200, height=50, fontSize=36)
 
 # radio buttons
 community_1_button = pygwidgets.TextRadioButton(window, (100, 100), group="communities", text="Community 1", value=False)
@@ -144,17 +148,18 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         elif event.type == TIMER_EVENT:
-            hours += 1
-            CommunityList.charge_vehicles()
-            print(hours)
+            if simulation_running:
+                hours += 1
+                CommunityList.charge_vehicles()
+                print(hours)
         
         # Days
-        if hours == 5:
+        if hours == 24:
             daily_profit = str(CommunityList.calculate_total_charge_cost())
             total_cars_charged_daily = str(CommunityList.calculate_total_fully_charged_cars())
             
         # Weeks
-        if hours == 10:
+        if hours == 168:
             weekly_profit = str(CommunityList.calculate_total_charge_cost())
             total_cars_charged_weekly = str(CommunityList.calculate_total_fully_charged_cars())
             cars_not_charged_community_1 = str(CommunityList.communities[0].get_total_vehicles_not_charged())
@@ -181,12 +186,15 @@ while run:
         elif menu_state == main_menu:
             if exit_button.handleEvent(event):
                 run = False
-            elif add_station_button.handleEvent(event):
+            elif configure_simulation_button.handleEvent(event):
                 menu_state = station_management_menu
         # Handle events for the station management menu
         elif menu_state == station_management_menu:
             if back_button.handleEvent(event):
                 menu_state = main_menu
+            if start_simulation_button.handleEvent(event):
+                simulation_running = True
+                menu_state = running # Change to running state
             if community_1_button.handleEvent(event):
                 print("Community 1 selected")
             if community_2_button.handleEvent(event):
@@ -237,7 +245,7 @@ while run:
     # Draw the current menu state
     if menu_state == main_menu:
         # Draw elements for the main menu
-        add_station_button.draw()
+        configure_simulation_button.draw()
         exit_button.draw()
     elif menu_state == station_management_menu:
         # Draw elements for the station management menu
@@ -248,6 +256,7 @@ while run:
         Level2_Charge_Station_Button.draw()
         Level3_Charge_Station_Button.draw()
         submit_station_button.draw()
+        start_simulation_button.draw()
     elif menu_state == results_menu:
         # Draw elements for the results menu
         back_button.draw()
@@ -259,5 +268,8 @@ while run:
         Total_Vehicles_Not_Charged_Comunity_3.draw()
         Total_Cost_EV_Day.draw()
         Suggested_Communities.draw()
+    elif menu_state == running:
+        running_page_text_1.draw()
+        running_page_text_2.draw()
 
     pygame.display.update()
