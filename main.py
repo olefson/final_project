@@ -221,7 +221,14 @@ while run:
                         print("Lvl 3 station submitted for community 3")
                 else:
                     print("Invalid Selection")
-                menu_state = main_menu
+                # Reset Radio Buttons
+                community_1_button.setValue(False)
+                community_2_button.setValue(False)
+                community_3_button.setValue(False)
+                Level2_Charge_Station_Button.setValue(False)
+                Level3_Charge_Station_Button.setValue(False)
+                
+
         # Handle events for the results menu
         elif menu_state == results_menu:
             if back_button.handleEvent(event):
