@@ -13,7 +13,7 @@ class ChargeStation:
         self.cost_per_kwh = cost_per_kwh  # Cost per kWh
 
     def calculate_cost(self, energy_used):
-        # calculate cost based on energy used
+        # Calculate cost based on energy used
         return energy_used * self.cost_per_kwh
     
     def has_enough_capacity(self, energy_needed):
@@ -34,24 +34,29 @@ class ElectricVehicle:
         self.capacity = capacity  # Capacity in kWh
         self.charge_rate = charge_rate  # Charge rate in kW
         self.current_charge = current_charge
+        self.fully_charged = False # Vehicle is not fully charged by default, keeps track to avoid inflated numbers
 
-    def charge(self, station):
+    def charge(self, station, community):
         # Check if vehicle compatible with station
+        if self.fully_charged:
+            return False
         if isinstance(self, Level2_EV) and isinstance(station, Level2_Charge_Station):
-            #  calc energy needed
-            energy_needed = min(self.charge_rate, station.capacity)
-            #  charge vehicle and update remaining capacity of station
+            energy_needed = min(self.charge_rate, station.capacity)  # Check if station has enough capacity
             if station.has_enough_capacity(energy_needed):
                 self.current_charge += energy_needed
                 if self.current_charge >= self.capacity:
-                    print("Vehicle is fully charged")
+                    community.add_fully_charged_vehicle()  # Update community's fully charged count
+                    community.remove_vehicle(self)  # Remove vehicle from community
+                    # print("Vehicle is fully charged")
                 return True
         elif isinstance(self, Level3_EV) and isinstance(station, Level3_Charge_Station):
-            energy_needed = min(self.charge_rate, station.capacity)
+            energy_needed = min(self.charge_rate, station.capacity)  # Check if station has enough capacity
             if station.has_enough_capacity(energy_needed):
                 self.current_charge += energy_needed
                 if self.current_charge >= self.capacity:
-                    print("Vehicle is fully charged")
+                    community.add_fully_charged_vehicle()  # Update community's fully charged count
+                    community.remove_vehicle(self)  # Remove vehicle from community
+                    # print("Vehicle is fully charged")
                 return True
         else:
             print("Vehicle and station are not compatible")
@@ -77,6 +82,32 @@ class Community:
         self.vehicles = []
         self.revenue = 0
         self.cost = 0
+        self.fully_charged_count = 0 # Keep track of fully charged vehicles
+        self.initial_vehicle_count = 0 # Keep track of initial vehicle count
+    
+    def get_total_vehicles_not_charged(self):
+        total_fully_charged = self.get_fully_charged_count()
+        total_not_charged = self.initial_vehicle_count - total_fully_charged
+        return total_not_charged
+    
+    def remove_vehicle(self, vehicle):
+        if vehicle in self.vehicles:
+            self.vehicles.remove(vehicle)
+            
+    def get_fully_charged_count(self):
+        return self.fully_charged_count
+    
+    def calculate_charge_cost(self):
+        charge_cost_per_kwh = 0.11
+        total_cost = 0
+        for vehicle in self.vehicles:
+            energy_consumed =  vehicle.current_charge / vehicle.capacity
+            vehicle_cost = energy_consumed * charge_cost_per_kwh
+            total_cost += vehicle_cost
+        return total_cost
+        
+    def add_fully_charged_vehicle(self):
+        self.fully_charged_count += 1
 
     def add_station(self, station):
         self.stations.append(station)
@@ -88,7 +119,8 @@ class Community:
             return random.randint(0, 1)
 
     def generate_random_vehicles(self):
-        for i in range(random.randint(50, 500)):
+        self.initial_vehicle_count = random.randint(50, 500) # Random number of vehicles
+        for i in range(self.initial_vehicle_count):
             if self.random_zero_or_one() == 0:
                 self.add_vehicle(Level2_EV(i))
             else:
@@ -119,8 +151,29 @@ class CommunityList:
         self.communities = []
         self.total_cost = 0
         self.total_revenue = 0
+        self.total_charge_cost = 0
+        self.total_fully_charged_cars = 0
         
-    def create_base_communities(self): # create 3 example communities with random cars
+    def find_best_community(self): # Finds community with the least amount of fully charged cars
+        best_community = None
+        min_fully_charged_count = float('inf')
+        
+        for community in self.communities:
+            fully_charged_count = community.get_fully_charged_count()
+            if fully_charged_count < min_fully_charged_count:
+                best_community = community
+                min_fully_charged_count = fully_charged_count
+
+        if best_community:
+            return f"{best_community.name} would benefit from another charging station"
+        else:
+            return "No community found"
+        
+    def calculate_total_fully_charged_cars(self):
+        self.total_fully_charged_cars = sum(community.get_fully_charged_count() for community in self.communities)
+        return self.total_fully_charged_cars
+    
+    def create_base_communities(self): # Create 3 example communities with random cars
         self.add_community(Community("Community 1"))
         self.communities[0].generate_random_vehicles()
         self.add_community(Community("Community 2"))
@@ -137,7 +190,11 @@ class CommunityList:
         for community in self.communities:
             self.total_cost += community.calculate_cost()
         return self.total_cost
-       
+    
+    def calculate_total_charge_cost(self):
+        for community in self.communities:
+            self.total_charge_cost += community.calculate_charge_cost()
+        return self.total_charge_cost
         
     def reset_cost(self):
         self.total_cost = 0
@@ -163,9 +220,19 @@ class CommunityList:
     def charge_vehicles(self):
         for community in self.communities:
             for vehicle in community.vehicles:
-                for station in community.stations:
-                    if vehicle.current_charge < vehicle.capacity:
-                        vehicle.charge(station)
+                if isinstance(vehicle, Level2_EV):
+                    for station in community.stations:
+                        if isinstance(station, Level2_Charge_Station):
+                            vehicle.charge(station, community)  # Pass community instance as argument
+                        else:
+                            continue
+                if isinstance(vehicle, Level3_EV):
+                    for station in community.stations:
+                        if isinstance(station, Level3_Charge_Station):
+                            vehicle.charge(station, community)  # Pass community instance as argument
+                        else:
+                            continue
+        print("Vehicles charged")
         return True
     
     def calculate_total_revenue(self):
