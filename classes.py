@@ -16,6 +16,9 @@ class ChargeStation:
         # calculate cost based on energy used
         return energy_used * self.cost_per_kwh
     
+    def has_enough_capacity(self, energy_needed):
+        return self.capacity >= energy_needed
+    
 class Level2_Charge_Station(ChargeStation):
     def __init__(self):
         super().__init__(capacity=600, cost_per_kwh=0.11)  
@@ -32,41 +35,40 @@ class ElectricVehicle:
         self.charge_rate = charge_rate  # Charge rate in kW
         self.current_charge = current_charge
 
-    def charge(self):
-        pass
+    def charge(self, station):
+        # Check if vehicle compatible with station
+        if isinstance(self, Level2_EV) and isinstance(station, Level2_Charge_Station):
+            #  calc energy needed
+            energy_needed = min(self.charge_rate, station.capacity)
+            #  charge vehicle and update remaining capacity of station
+            if station.has_enough_capacity(energy_needed):
+                self.current_charge += energy_needed
+                if self.current_charge >= self.capacity:
+                    print("Vehicle is fully charged")
+                return True
+        elif isinstance(self, Level3_EV) and isinstance(station, Level3_Charge_Station):
+            energy_needed = min(self.charge_rate, station.capacity)
+            if station.has_enough_capacity(energy_needed):
+                self.current_charge += energy_needed
+                if self.current_charge >= self.capacity:
+                    print("Vehicle is fully charged")
+                return True
+        else:
+            print("Vehicle and station are not compatible")
+            return False
+
     
 class Level2_EV(ElectricVehicle):
     def __init__(self, number):
         super().__init__(capacity=40, charge_rate=5, current_charge=0) 
     
-    def charge(self, station):
-        if isinstance(station, Level2_Charge_Station):
-            if station.capacity >= 5 and self.current_charge < self.capacity:
-                station.capacity -= 5
-                self.current_charge += 5
-                return True
-            else:
-                return False
-        else:
-            print("Not a Level 2 Station")
-            return False
+
             
             
 class Level3_EV(ElectricVehicle):
     def __init__(self, number):
         super().__init__(capacity=80, charge_rate=70, current_charge=0)
         
-    def charge(self, station):
-        if isinstance(station, Level3_Charge_Station):
-            if station.capacity >= 70 and self.current_charge < self.capacity:
-                station.capacity -= 70
-                self.current_charge += 70
-                return True
-            else:
-                return False
-        else:
-            print("Not a Level 3 Station")
-            return False
 
 class Community:
     def __init__(self, name):
@@ -161,19 +163,9 @@ class CommunityList:
     def charge_vehicles(self):
         for community in self.communities:
             for vehicle in community.vehicles:
-                if isinstance(vehicle, Level2_EV):
-                    for station in community.stations:
-                        if isinstance(station, Level2_Charge_Station):
-                            vehicle.charge(station)
-                        else:
-                            continue
-                if isinstance(vehicle, Level3_EV):
-                    for station in community.stations:
-                        if isinstance(station, Level3_Charge_Station):
-                            vehicle.charge(station)
-                        else:
-                            continue
-        print("Vehicles charged") 
+                for station in community.stations:
+                    if vehicle.current_charge < vehicle.capacity:
+                        vehicle.charge(station)
         return True
     
     def calculate_total_revenue(self):

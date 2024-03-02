@@ -137,6 +137,7 @@ while run:
             run = False
         elif event.type == TIMER_EVENT:
             hours += 1
+            CommunityList.charge_vehicles()
             print(hours)
         # Handle events for the main menu
         elif menu_state == main_menu:
